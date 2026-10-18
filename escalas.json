@@ -10,7 +10,7 @@
     "equipe": [
       {
         "id": "p1",
-        "nome": "Pessoa 1",
+        "nome": "Luana Suzuki",
         "funcoes": [
           "Câmera",
           "Moderação"
@@ -19,7 +19,7 @@
       },
       {
         "id": "p2",
-        "nome": "Pessoa 2",
+        "nome": "Gabriel Suzuki",
         "funcoes": [
           "Câmera",
           "Moderação"
@@ -28,7 +28,7 @@
       },
       {
         "id": "p3",
-        "nome": "Pessoa 3",
+        "nome": "Marcella Cruvinel",
         "funcoes": [
           "Câmera",
           "Moderação"
@@ -37,7 +37,7 @@
       },
       {
         "id": "p4",
-        "nome": "Pessoa 4",
+        "nome": "Kauã Rezende",
         "funcoes": [
           "Câmera",
           "Moderação"
@@ -46,7 +46,7 @@
       },
       {
         "id": "p5",
-        "nome": "Pessoa 5",
+        "nome": "André Martins",
         "funcoes": [
           "Câmera",
           "Moderação"
@@ -55,7 +55,7 @@
       },
       {
         "id": "p6",
-        "nome": "Pessoa 6",
+        "nome": "Augusto Silva",
         "funcoes": [
           "Câmera",
           "Moderação"
@@ -64,7 +64,7 @@
       },
       {
         "id": "p7",
-        "nome": "Pessoa 7",
+        "nome": "João Paulo",
         "funcoes": [
           "Câmera",
           "Moderação"
