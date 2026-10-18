@@ -71,8 +71,8 @@
       </div>
     </div>
     <div class="bloco">
-      <h2>Cultos da semana</h2>
-      <p class="dica">Os cultos que se repetem toda semana e quantas pessoas cada função precisa.</p>
+      <h2>Cultos</h2>
+      <p class="dica">Os cultos fixos (toda semana, todo mês ou a cada 2 meses) e quantas pessoas cada função precisa.</p>
       <div id="cultos"></div>
       <button id="add-culto">+ Culto</button>
     </div>
@@ -97,8 +97,10 @@
 </div>
 
 <script>
-const KD = "escalas-transmissao-dados-v2";
-const KP = "escalas-transmissao-plano-v2";
+const KD = "escalas-transmissao-dados-v3";
+const KP = "escalas-transmissao-plano-v3";
+const FREQ = { semanal: "Toda semana", mensal: "Todo mês", bimestral: "A cada 2 meses" };
+const DIAS_L = ["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
 const MIN = "Transmissão";
 const DIAS = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 const DIAS_C = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
@@ -123,9 +125,9 @@ function padrao() {
       funcoes: ["Câmera", "Moderação", "Câmera móvel"],
       equipe: Array.from({ length: 7 }, (_, i) => ({ id: uid("p"), nome: `Pessoa ${i+1}`, funcoes: ["Câmera", "Moderação"], fixos: [] })),
       cultos: [
-        { id: uid("c"), nome: "Culto de Domingo — Manhã", dia: 0, horario: "10:00", vagas: { "Câmera": 2, "Moderação": 1 } },
-        { id: uid("c"), nome: "Culto de Domingo — Noite", dia: 0, horario: "18:00", vagas: { "Câmera": 2, "Moderação": 1 } },
-        { id: uid("c"), nome: "Culto de Quinta", dia: 4, horario: "19:30", vagas: { "Câmera": 1, "Moderação": 1 } }
+        { id: "c1", nome: "Culto de Quarta", dia: 3, horario: "20:00", freq: "semanal", vagas: { "Câmera": 1, "Moderação": 1 } },
+        { id: "c2", nome: "Culto de Domingo — Manhã", dia: 0, horario: "10:00", freq: "semanal", vagas: { "Câmera": 1, "Moderação": 1 } },
+        { id: "c3", nome: "Culto de Domingo — Noite", dia: 0, horario: "18:00", freq: "semanal", vagas: { "Câmera": 1, "Moderação": 1 } }
       ]
     },
     eventos: []
@@ -166,7 +168,7 @@ function renderEquipe() {
       <label class="l" style="margin-top:10px">Sabe fazer</label>
       <div class="chips">${cfg().funcoes.map(f => `<button class="chip ${p.funcoes.includes(f) ? "on" : ""}" data-funcao="${esc(f)}">${esc(f)}</button>`).join("")}</div>
       <label class="l" style="margin-top:10px">Dias fixos</label>
-      <div class="chips">${cfg().cultos.map(c => `<button class="chip ${p.fixos.includes(c.id) ? "on" : ""}" data-fixo="${c.id}">📌 ${esc(DIAS_C[c.dia])} ${esc(c.horario)} · ${esc(c.nome)}</button>`).join("") || `<span class="dica">Cadastre os cultos primeiro.</span>`}</div>
+      <div class="chips">${cfg().cultos.map(c => `<button class="chip ${p.fixos.includes(c.id) ? "on" : ""}" data-fixo="${c.id}">📌 ${esc(c.nome)} · ${esc(rotuloRec(c))} ${esc(c.horario)}</button>`).join("") || `<span class="dica">Cadastre os cultos primeiro.</span>`}</div>
     </div>`).join("");
 }
 $("equipe").addEventListener("input", e => {
@@ -199,19 +201,53 @@ function renderCultos() {
         <div><label class="l">Horário</label><input type="time" data-campo="horario" value="${esc(c.horario)}"></div>
         <div><label class="l">Nome</label><input type="text" data-campo="nome" value="${esc(c.nome)}"></div>
       </div>
-      <label class="l" style="margin-top:10px">Pessoas por função</label>
+      <div class="campos3" style="margin-top:10px">
+        <div><label class="l">Repete</label><select data-campo="freq">${Object.entries(FREQ).map(([k, v]) => `<option value="${k}" ${(c.freq || "semanal") === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>
+        ${(c.freq || "semanal") !== "semanal" ? `<div><label class="l">Qual semana do mês</label><select data-campo="semana">${[1,2,3,4,5].map(n => `<option value="${n}" ${(+c.semana || 1) === n ? "selected" : ""}>${n === 5 ? "Último" : ordinal(n, c.dia)}</option>`).join("")}</select></div>` : ""}
+        ${c.freq === "bimestral" ? `<div><label class="l">Próxima vez (mês)</label><input type="month" data-campo="inicio" value="${esc(c.inicio || "")}"></div>` : ""}
+      </div>
+      ${(c.freq || "semanal") !== "semanal" ? `<div style="margin-top:10px"><label class="l">Acontece no lugar de</label><select data-campo="substitui"><option value="">— nenhum (é um culto a mais) —</option>${cfg().cultos.filter(o => o.id !== c.id && (o.freq || "semanal") === "semanal").map(o => `<option value="${o.id}" ${c.substitui === o.id ? "selected" : ""}>${esc(o.nome)} (${esc(o.horario)})</option>`).join("")}</select></div>` : ""}
+      <p class="dica">📅 ${esc(rotuloRec(c))} às ${esc(c.horario)}${c.substitui ? ` · nesse dia substitui “${esc(cfg().cultos.find(o => o.id === c.substitui)?.nome || "")}”` : ""}</p>
+      <label class="l">Pessoas por função</label>
       ${vagasHTML(c.vagas)}
       <div class="acoes"><button class="danger" data-acao="rm">Remover culto</button></div>
     </div>`).join("");
 }
+function ordinal(n, dia) { return n + ((+dia === 0 || +dia === 6) ? "º" : "ª"); }
+function rotuloRec(c) {
+  const f = c.freq || "semanal", d = DIAS_L[+c.dia];
+  if (f === "semanal") return `Toda ${d}`.replace("Toda domingo", "Todo domingo").replace("Toda sábado", "Todo sábado");
+  const qual = (+c.semana || 1) === 5 ? `Último ${d}` : `${ordinal(+c.semana || 1, c.dia)} ${d}`;
+  if (f === "mensal") return `${qual} de cada mês`;
+  const [y, m] = (c.inicio || "").split("-").map(Number);
+  return `${qual} do mês, a cada 2 meses${y ? ` (próximo: ${pad(m)}/${y})` : ""}`;
+}
+function ocorre(c, d) {
+  if (+c.dia !== d.getDay()) return false;
+  const f = c.freq || "semanal"; if (f === "semanal") return true;
+  const n = +c.semana || 1;
+  const ultimo = addDias(d, 7).getMonth() !== d.getMonth();
+  if (n === 5 ? !ultimo : Math.ceil(d.getDate() / 7) !== n) return false;
+  if (f === "bimestral") {
+    if (!c.inicio) return true;
+    const [y, m] = c.inicio.split("-").map(Number);
+    const diff = (d.getFullYear() * 12 + d.getMonth()) - (y * 12 + m - 1);
+    return ((diff % 2) + 2) % 2 === 0;
+  }
+  return true;
+}
 $("cultos").addEventListener("input", e => {
   const card = e.target.closest(".cartao"); if (!card) return;
   const c = cfg().cultos[+card.dataset.i];
-  if (e.target.dataset.campo) c[e.target.dataset.campo] = e.target.dataset.campo === "dia" ? +e.target.value : e.target.value;
+  const campo = e.target.dataset.campo;
+  if (campo) c[campo] = (campo === "dia" || campo === "semana") ? +e.target.value : e.target.value;
+  if (campo === "freq" && c.freq === "semanal") { delete c.substitui; }
   if (e.target.dataset.vaga) c.vagas[e.target.dataset.vaga] = Math.max(0, +e.target.value || 0);
   salvar();
 });
-$("cultos").addEventListener("change", e => { if (e.target.dataset.campo === "dia") salvar(); });
+$("cultos").addEventListener("change", e => {
+  if (["dia", "freq", "semana", "inicio", "substitui", "horario"].includes(e.target.dataset.campo)) { if (P) P.res = null; salvar(); renderCultos(); }
+});
 $("cultos").addEventListener("click", e => {
   const b = e.target.closest("button[data-acao=rm]"); if (!b) return;
   const i = +b.closest(".cartao").dataset.i; const c = cfg().cultos[i];
@@ -240,17 +276,22 @@ function periodo() {
 }
 function instancias() {
   const [a, b] = periodo(); const out = [];
-  for (let d = new Date(a); d <= b; d = addDias(d, 1))
-    for (const c of cfg().cultos) if (+c.dia === d.getDay())
-      out.push({ key: iso(d) + "|" + c.id, data: iso(d), nome: c.nome, horario: c.horario, vagas: c.vagas, cultoId: c.id });
+  for (let d = new Date(a); d <= b; d = addDias(d, 1)) {
+    const doDia = cfg().cultos.filter(c => ocorre(c, d));
+    const substituidos = new Set(doDia.map(c => c.substitui).filter(Boolean));
+    for (const c of doDia) if (!substituidos.has(c.id))
+      out.push({ key: iso(d) + "|" + c.id, data: iso(d), nome: c.nome, horario: c.horario, vagas: c.vagas, cultoId: c.id,
+        fixoIds: [c.id, c.substitui].filter(Boolean), especial: (c.freq || "semanal") !== "semanal" });
+  }
   for (const e of P.especiais) if (e.data >= iso(a) && e.data <= iso(b))
     out.push({ key: "esp|" + e.id, data: e.data, nome: e.nome || "Evento especial", horario: e.horario, vagas: e.vagas, especial: true });
   return out.sort((x, y) => (x.data + (x.horario || "")).localeCompare(y.data + (y.horario || "")));
 }
 function dispDe(inst) {
-  if (!P.disp[inst.key]) P.disp[inst.key] = cfg().equipe.filter(p => inst.cultoId && p.fixos.includes(inst.cultoId)).map(p => p.id);
+  if (!P.disp[inst.key]) P.disp[inst.key] = cfg().equipe.filter(p => ehFixo(p, inst)).map(p => p.id);
   return P.disp[inst.key];
 }
+const ehFixo = (p, inst) => (inst.fixoIds || []).some(id => p.fixos.includes(id));
 const pessoa = id => cfg().equipe.find(p => p.id === id);
 
 function renderPeriodo() {
@@ -309,7 +350,7 @@ function renderDisp() {
     return `<div class="cartao disp" data-key="${esc(inst.key)}">
       <div class="disp-topo"><strong>${curta(inst.data)} · ${esc(inst.horario || "")}</strong> <span>${esc(inst.nome)}${inst.especial ? " ⭐" : ""}</span>
         <span class="conta ${d.length < preciso ? "falta" : ""}">${d.length}/${preciso}</span></div>
-      <div class="chips">${cfg().equipe.map(p => `<button class="chip ${d.includes(p.id) ? "on" : ""}" data-p="${p.id}">${inst.cultoId && p.fixos.includes(inst.cultoId) ? "📌 " : ""}${esc(p.nome || "(sem nome)")}</button>`).join("")}
+      <div class="chips">${cfg().equipe.map(p => `<button class="chip ${d.includes(p.id) ? "on" : ""}" data-p="${p.id}">${ehFixo(p, inst) ? "📌 " : ""}${esc(p.nome || "(sem nome)")}</button>`).join("")}
         <button class="chip ghost-chip" data-todos="1">todos</button></div>
     </div>`;
   }).join("");
@@ -345,7 +386,7 @@ function gerar() {
     for (const f of vagas) {
       const cand = disp.filter(p => !usados.has(p.id) && sabe(p, f));
       cand.forEach(p => p._s =
-        (inst.cultoId && p.fixos.includes(inst.cultoId) ? -1000 : 0) +
+        (ehFixo(p, inst) ? -1000 : 0) +
         (noPeriodo[p.id] || 0) * 10 +
         (porDia[inst.data + p.id] ? 6 : 0) +
         (hist[p.nome] || 0) +
