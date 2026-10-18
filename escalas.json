@@ -1,43 +1,109 @@
 {
-  "titulo": "Escalas",
+  "titulo": "Escala da Transmissão",
   "subtitulo": "Lagoinha Uberlândia",
-  "eventos": [
-    {
-      "data": "2026-10-25",
-      "horario": "10:00",
-      "nome": "Culto de Domingo — Manhã",
-      "obs": "Chegar 1h antes para passagem de som.",
-      "escala": [
-        { "ministerio": "Louvor", "funcao": "Ministro", "pessoas": ["Ana"] },
-        { "ministerio": "Louvor", "funcao": "Vocal", "pessoas": ["Bruno", "Carla"] },
-        { "ministerio": "Louvor", "funcao": "Bateria", "pessoas": ["Diego"] },
-        { "ministerio": "Mídia", "funcao": "Projeção", "pessoas": ["Eduarda"] },
-        { "ministerio": "Mídia", "funcao": "Fotografia", "pessoas": ["Felipe"] },
-        { "ministerio": "Recepção", "funcao": "Porta principal", "pessoas": ["Gabriela", "Henrique"] }
-      ]
-    },
-    {
-      "data": "2026-10-25",
-      "horario": "18:00",
-      "nome": "Culto de Domingo — Noite",
-      "obs": "",
-      "escala": [
-        { "ministerio": "Louvor", "funcao": "Ministro", "pessoas": ["Carla"] },
-        { "ministerio": "Louvor", "funcao": "Vocal", "pessoas": ["Ana", "Isabela"] },
-        { "ministerio": "Mídia", "funcao": "Projeção", "pessoas": ["João"] },
-        { "ministerio": "Kids", "funcao": "Sala 1", "pessoas": ["Larissa", "Marcos"] }
-      ]
-    },
-    {
-      "data": "2026-10-29",
-      "horario": "19:30",
-      "nome": "Culto de Quinta",
-      "obs": "",
-      "escala": [
-        { "ministerio": "Louvor", "funcao": "Ministro", "pessoas": ["Bruno"] },
-        { "ministerio": "Mídia", "funcao": "Projeção", "pessoas": ["Eduarda"] },
-        { "ministerio": "Recepção", "funcao": "Porta principal", "pessoas": ["Natália"] }
-      ]
-    }
-  ]
+  "config": {
+    "funcoes": [
+      "Câmera",
+      "Moderação",
+      "Câmera móvel"
+    ],
+    "equipe": [
+      {
+        "id": "p1",
+        "nome": "Pessoa 1",
+        "funcoes": [
+          "Câmera",
+          "Moderação"
+        ],
+        "fixos": []
+      },
+      {
+        "id": "p2",
+        "nome": "Pessoa 2",
+        "funcoes": [
+          "Câmera",
+          "Moderação"
+        ],
+        "fixos": []
+      },
+      {
+        "id": "p3",
+        "nome": "Pessoa 3",
+        "funcoes": [
+          "Câmera",
+          "Moderação"
+        ],
+        "fixos": []
+      },
+      {
+        "id": "p4",
+        "nome": "Pessoa 4",
+        "funcoes": [
+          "Câmera",
+          "Moderação"
+        ],
+        "fixos": []
+      },
+      {
+        "id": "p5",
+        "nome": "Pessoa 5",
+        "funcoes": [
+          "Câmera",
+          "Moderação"
+        ],
+        "fixos": []
+      },
+      {
+        "id": "p6",
+        "nome": "Pessoa 6",
+        "funcoes": [
+          "Câmera",
+          "Moderação"
+        ],
+        "fixos": []
+      },
+      {
+        "id": "p7",
+        "nome": "Pessoa 7",
+        "funcoes": [
+          "Câmera",
+          "Moderação"
+        ],
+        "fixos": []
+      }
+    ],
+    "cultos": [
+      {
+        "id": "c1",
+        "nome": "Culto de Domingo — Manhã",
+        "dia": 0,
+        "horario": "10:00",
+        "vagas": {
+          "Câmera": 2,
+          "Moderação": 1
+        }
+      },
+      {
+        "id": "c2",
+        "nome": "Culto de Domingo — Noite",
+        "dia": 0,
+        "horario": "18:00",
+        "vagas": {
+          "Câmera": 2,
+          "Moderação": 1
+        }
+      },
+      {
+        "id": "c3",
+        "nome": "Culto de Quinta",
+        "dia": 4,
+        "horario": "19:30",
+        "vagas": {
+          "Câmera": 1,
+          "Moderação": 1
+        }
+      }
+    ]
+  },
+  "eventos": []
 }

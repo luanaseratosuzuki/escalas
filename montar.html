@@ -4,207 +4,488 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Montar escalas</title>
+  <title>Montar escala · Transmissão</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>Montar escalas</h1>
-    <p>Monte aqui, depois salve o arquivo e envie para o GitHub.</p>
+    <h1>Montar escala</h1>
+    <p>Transmissão · <a href="./" class="link">ver o site público</a></p>
   </header>
 
+  <nav class="abas" id="abas">
+    <button data-aba="montar" class="on">1. Montar escala</button>
+    <button data-aba="equipe">2. Equipe</button>
+    <button data-aba="cultos">3. Cultos e funções</button>
+    <button data-aba="publicadas">4. Publicadas</button>
+  </nav>
+
+  <!-- ================= MONTAR ================= -->
+  <section id="aba-montar" class="aba">
+    <div class="bloco">
+      <h2>Período</h2>
+      <div class="linha-form">
+        <label class="seg"><input type="radio" name="modo" value="semana"> Semana</label>
+        <label class="seg"><input type="radio" name="modo" value="mes"> Mês</label>
+        <div id="campo-semana"><label class="l">Começa em</label><input type="date" id="inicio"></div>
+        <div id="campo-mes"><label class="l">Mês</label><input type="month" id="mes"></div>
+      </div>
+      <p class="dica" id="resumo-periodo"></p>
+    </div>
+
+    <div class="bloco">
+      <h2>Eventos especiais <span class="sub">conferências, apresentações…</span></h2>
+      <div id="especiais"></div>
+      <button id="add-especial">+ Evento especial</button>
+    </div>
+
+    <div class="bloco">
+      <h2>Quem pode servir</h2>
+      <p class="dica">Pela enquete do grupo, toque no nome de quem pode servir em cada culto. Quem tem 📌 está com dia fixo e já vem marcado.</p>
+      <div id="disp"></div>
+    </div>
+
+    <div class="acoes-grandes">
+      <button class="primary grande" id="gerar">⚡ Gerar escala</button>
+    </div>
+
+    <div id="resultado"></div>
+  </section>
+
+  <!-- ================= EQUIPE ================= -->
+  <section id="aba-equipe" class="aba" hidden>
+    <p class="dica">Marque o que cada pessoa sabe fazer. Quando alguém for treinado em outra função, é só marcar aqui. “Dias fixos” = a pessoa já vem marcada como disponível e tem prioridade nesse culto.</p>
+    <div id="equipe"></div>
+    <button id="add-pessoa">+ Pessoa</button>
+  </section>
+
+  <!-- ================= CULTOS ================= -->
+  <section id="aba-cultos" class="aba" hidden>
+    <div class="bloco">
+      <h2>Funções</h2>
+      <div class="chips" id="funcoes"></div>
+      <div class="linha-form" style="margin-top:10px">
+        <input type="text" id="nova-funcao" placeholder="Nova função">
+        <button id="add-funcao">Adicionar</button>
+      </div>
+    </div>
+    <div class="bloco">
+      <h2>Cultos da semana</h2>
+      <p class="dica">Os cultos que se repetem toda semana e quantas pessoas cada função precisa.</p>
+      <div id="cultos"></div>
+      <button id="add-culto">+ Culto</button>
+    </div>
+  </section>
+
+  <!-- ================= PUBLICADAS ================= -->
+  <section id="aba-publicadas" class="aba" hidden>
+    <p class="dica">Escalas que estão no arquivo. Se apagar algo aqui, baixe o arquivo e envie de novo ao GitHub.</p>
+    <div id="publicadas"></div>
+    <div class="acoes-grandes"><button class="primary" id="baixar">⬇ Baixar escalas.json</button></div>
+  </section>
+
   <div class="ajuda">
-    <strong>Como publicar as mudanças</strong>
+    <strong>Como publicar</strong>
     <ol>
-      <li>Monte ou edite as escalas abaixo (tudo fica salvo neste navegador automaticamente).</li>
-      <li>Clique em <b>Baixar escalas.json</b>.</li>
-      <li>No GitHub, abra o repositório → <b>Add file → Upload files</b> → arraste o <code>escalas.json</code> → <b>Commit changes</b>.</li>
+      <li>Depois de gerar e revisar, clique em <b>Publicar no site</b> (baixa o arquivo <code>escalas.json</code>).</li>
+      <li>No GitHub, no repositório <b>escalas</b>: <b>Add file → Upload files</b> → arraste o <code>escalas.json</code> → <b>Commit changes</b>.</li>
       <li>Em 1–2 minutos o site já mostra a escala nova.</li>
     </ol>
   </div>
-
-  <div class="barra">
-    <button class="primary" id="baixar">⬇ Baixar escalas.json</button>
-    <button id="novo">+ Novo culto/evento</button>
-    <button id="recarregar" title="Descarta o rascunho e carrega o que está publicado no site">↻ Carregar do site</button>
-    <label class="btn" title="Abrir um escalas.json do computador">📂 Abrir arquivo<input type="file" id="arquivo" accept=".json,application/json" hidden></label>
-    <span class="status" id="status"></span>
-  </div>
-
-  <div class="campos2" style="margin-top:16px">
-    <div><label class="l" for="titulo">Título do site</label><input type="text" id="titulo"></div>
-    <div><label class="l" for="subtitulo">Subtítulo</label><input type="text" id="subtitulo"></div>
-  </div>
-
-  <div id="eventos"></div>
-
-  <datalist id="dl-min"></datalist>
-  <datalist id="dl-func"></datalist>
-  <datalist id="dl-nomes"></datalist>
+  <p class="status-fixo" id="status"></p>
 </div>
 
 <script>
-const CHAVE = "escalas-rascunho-v1";
+const KD = "escalas-transmissao-dados-v2";
+const KP = "escalas-transmissao-plano-v2";
+const MIN = "Transmissão";
+const DIAS = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+const DIAS_C = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-let dados = { titulo: "Escalas", subtitulo: "", eventos: [] };
+const uid = p => p + Math.random().toString(36).slice(2, 8);
+const pad = n => String(n).padStart(2, "0");
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse = s => { const [y,m,d] = String(s).split("-").map(Number); return new Date(y, m-1, d||1); };
+const addDias = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const curta = s => { const d = parse(s); return `${DIAS_C[d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth()+1)}`; };
 
-function status(msg) { $("status").textContent = msg; }
+let D = null;  // dados (vão para escalas.json)
+let P = null;  // plano em andamento (só neste navegador)
 
-function salvarLocal() {
-  try { localStorage.setItem(CHAVE, JSON.stringify(dados)); status("Rascunho salvo neste navegador"); }
-  catch (e) { status("Não foi possível salvar o rascunho — baixe o arquivo antes de sair"); }
+function padrao() {
+  return {
+    titulo: "Escala da Transmissão",
+    subtitulo: "Lagoinha Uberlândia",
+    config: {
+      funcoes: ["Câmera", "Moderação", "Câmera móvel"],
+      equipe: Array.from({ length: 7 }, (_, i) => ({ id: uid("p"), nome: `Pessoa ${i+1}`, funcoes: ["Câmera", "Moderação"], fixos: [] })),
+      cultos: [
+        { id: uid("c"), nome: "Culto de Domingo — Manhã", dia: 0, horario: "10:00", vagas: { "Câmera": 2, "Moderação": 1 } },
+        { id: uid("c"), nome: "Culto de Domingo — Noite", dia: 0, horario: "18:00", vagas: { "Câmera": 2, "Moderação": 1 } },
+        { id: uid("c"), nome: "Culto de Quinta", dia: 4, horario: "19:30", vagas: { "Câmera": 1, "Moderação": 1 } }
+      ]
+    },
+    eventos: []
+  };
+}
+function planoPadrao() {
+  const hoje = new Date();
+  const seg = addDias(hoje, ((8 - hoje.getDay()) % 7) || 7); // próxima segunda
+  const prox = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 1);
+  return { modo: "semana", inicio: iso(seg), mes: `${prox.getFullYear()}-${pad(prox.getMonth()+1)}`, especiais: [], disp: {}, res: null };
+}
+const cfg = () => D.config;
+
+// ---------- salvar ----------
+let tStatus;
+function status(msg) { $("status").textContent = msg; $("status").classList.add("vis"); clearTimeout(tStatus); tStatus = setTimeout(() => $("status").classList.remove("vis"), 2500); }
+function salvar(silencioso) {
+  try { localStorage.setItem(KD, JSON.stringify(D)); localStorage.setItem(KP, JSON.stringify(P)); if (!silencioso) status("Salvo neste navegador"); }
+  catch { status("Não consegui salvar o rascunho"); }
 }
 
-function atualizarSugestoes() {
-  const mins = new Set(), funcs = new Set(), nomes = new Set();
-  for (const ev of dados.eventos) for (const l of ev.escala || []) {
-    if (l.ministerio) mins.add(l.ministerio);
-    if (l.funcao) funcs.add(l.funcao);
-    (l.pessoas || []).forEach(p => p && nomes.add(p));
-  }
-  const op = s => [...s].sort((a,b)=>a.localeCompare(b,"pt-BR")).map(v => `<option value="${esc(v)}">`).join("");
-  $("dl-min").innerHTML = op(mins);
-  $("dl-func").innerHTML = op(funcs);
-  $("dl-nomes").innerHTML = op(nomes);
-}
+// ---------- abas ----------
+$("abas").addEventListener("click", e => {
+  const b = e.target.closest("button[data-aba]"); if (!b) return;
+  document.querySelectorAll("#abas button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".aba").forEach(s => s.hidden = s.id !== "aba-" + b.dataset.aba);
+  renderTudo();
+});
 
-function ordenar() {
-  dados.eventos.sort((a, b) => ((a.data||"") + (a.horario||"")).localeCompare((b.data||"") + (b.horario||"")));
-}
-
-function render() {
-  $("titulo").value = dados.titulo || "";
-  $("subtitulo").value = dados.subtitulo || "";
-  atualizarSugestoes();
-
-  if (!dados.eventos.length) {
-    $("eventos").innerHTML = `<p class="vazio">Nenhum evento ainda. Clique em “+ Novo culto/evento”.</p>`;
-    return;
-  }
-
-  $("eventos").innerHTML = dados.eventos.map((ev, i) => `
-    <div class="ed-evento" data-i="${i}">
-      <div class="campos3">
-        <div><label class="l">Data</label><input type="date" data-k="data" value="${esc(ev.data)}"></div>
-        <div><label class="l">Horário</label><input type="time" data-k="horario" value="${esc(ev.horario)}"></div>
-        <div><label class="l">Nome do culto/evento</label><input type="text" data-k="nome" value="${esc(ev.nome)}" placeholder="Ex.: Culto de Domingo — Noite"></div>
+// ================= EQUIPE =================
+function renderEquipe() {
+  $("equipe").innerHTML = cfg().equipe.map((p, i) => `
+    <div class="cartao" data-i="${i}">
+      <div class="linha-form">
+        <input type="text" data-campo="nome" value="${esc(p.nome)}" placeholder="Nome">
+        <button class="ghost danger" data-acao="rm" title="Remover pessoa">✕</button>
       </div>
-      <div style="margin-top:10px"><label class="l">Observação (opcional)</label><input type="text" data-k="obs" value="${esc(ev.obs)}" placeholder="Ex.: Chegar 1h antes"></div>
-
-      <div class="ed-cab"><span>Ministério</span><span>Função</span><span>Pessoas (separe por vírgula)</span><span></span></div>
-      ${(ev.escala || []).map((l, j) => `
-        <div class="ed-linha" data-j="${j}">
-          <input type="text" data-c="ministerio" list="dl-min" value="${esc(l.ministerio)}" placeholder="Ministério">
-          <input type="text" data-c="funcao" list="dl-func" value="${esc(l.funcao)}" placeholder="Função">
-          <input type="text" class="pessoas" data-c="pessoas" value="${esc((l.pessoas||[]).join(", "))}" placeholder="Pessoas (separe por vírgula)">
-          <button class="ghost danger" data-acao="rmLinha" title="Remover linha">✕</button>
-        </div>`).join("")}
-
-      <div class="acoes">
-        <button data-acao="addLinha">+ Linha</button>
-        <button data-acao="duplicar" title="Cria uma cópia deste evento uma semana depois">Duplicar (+7 dias)</button>
-        <button class="danger" data-acao="rmEvento">Excluir evento</button>
-      </div>
+      <label class="l" style="margin-top:10px">Sabe fazer</label>
+      <div class="chips">${cfg().funcoes.map(f => `<button class="chip ${p.funcoes.includes(f) ? "on" : ""}" data-funcao="${esc(f)}">${esc(f)}</button>`).join("")}</div>
+      <label class="l" style="margin-top:10px">Dias fixos</label>
+      <div class="chips">${cfg().cultos.map(c => `<button class="chip ${p.fixos.includes(c.id) ? "on" : ""}" data-fixo="${c.id}">📌 ${esc(DIAS_C[c.dia])} ${esc(c.horario)} · ${esc(c.nome)}</button>`).join("") || `<span class="dica">Cadastre os cultos primeiro.</span>`}</div>
     </div>`).join("");
 }
-
-// ---- edição ----
-$("eventos").addEventListener("input", e => {
-  const card = e.target.closest(".ed-evento"); if (!card) return;
-  const ev = dados.eventos[+card.dataset.i];
-  if (e.target.dataset.k) ev[e.target.dataset.k] = e.target.value;
-  const linha = e.target.closest(".ed-linha");
-  if (linha && e.target.dataset.c) {
-    const l = ev.escala[+linha.dataset.j];
-    const c = e.target.dataset.c;
-    l[c] = c === "pessoas" ? e.target.value.split(",").map(s => s.trim()).filter(Boolean) : e.target.value;
-  }
-  salvarLocal();
+$("equipe").addEventListener("input", e => {
+  const c = e.target.closest(".cartao"); if (!c) return;
+  cfg().equipe[+c.dataset.i].nome = e.target.value; salvar();
 });
-$("eventos").addEventListener("change", e => {
-  if (e.target.dataset.k === "data" || e.target.dataset.k === "horario") { ordenar(); render(); }
-  else atualizarSugestoes();
+$("equipe").addEventListener("click", e => {
+  const c = e.target.closest(".cartao"); if (!c) return;
+  const p = cfg().equipe[+c.dataset.i];
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.acao === "rm") { if (!confirm(`Remover ${p.nome}?`)) return; cfg().equipe.splice(+c.dataset.i, 1); }
+  if (b.dataset.funcao) toggle(p.funcoes, b.dataset.funcao);
+  if (b.dataset.fixo) toggle(p.fixos, b.dataset.fixo);
+  salvar(); renderEquipe();
 });
-$("eventos").addEventListener("click", e => {
-  const b = e.target.closest("button[data-acao]"); if (!b) return;
-  const card = b.closest(".ed-evento"); const i = +card.dataset.i; const ev = dados.eventos[i];
-  const acao = b.dataset.acao;
-  if (acao === "addLinha") {
-    const ult = ev.escala[ev.escala.length - 1];
-    ev.escala.push({ ministerio: ult ? ult.ministerio : "", funcao: "", pessoas: [] });
-  }
-  if (acao === "rmLinha") ev.escala.splice(+b.closest(".ed-linha").dataset.j, 1);
-  if (acao === "rmEvento") {
-    if (!confirm(`Excluir “${ev.nome || "evento"}”?`)) return;
-    dados.eventos.splice(i, 1);
-  }
-  if (acao === "duplicar") {
-    const copia = JSON.parse(JSON.stringify(ev));
-    if (copia.data) {
-      const [y, m, d] = copia.data.split("-").map(Number);
-      const nd = new Date(y, m - 1, d + 7);
-      copia.data = `${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,"0")}-${String(nd.getDate()).padStart(2,"0")}`;
-    }
-    dados.eventos.push(copia); ordenar();
-  }
-  salvarLocal(); render();
-});
-$("titulo").addEventListener("input", e => { dados.titulo = e.target.value; salvarLocal(); });
-$("subtitulo").addEventListener("input", e => { dados.subtitulo = e.target.value; salvarLocal(); });
+$("add-pessoa").onclick = () => { cfg().equipe.push({ id: uid("p"), nome: "", funcoes: [], fixos: [] }); salvar(); renderEquipe(); };
+function toggle(arr, v) { const i = arr.indexOf(v); i >= 0 ? arr.splice(i, 1) : arr.push(v); }
 
-$("novo").onclick = () => {
-  const h = new Date();
-  const data = `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,"0")}-${String(h.getDate()).padStart(2,"0")}`;
-  dados.eventos.push({ data, horario: "", nome: "", obs: "", escala: [{ ministerio: "", funcao: "", pessoas: [] }] });
-  ordenar(); salvarLocal(); render();
-  const idx = dados.eventos.findIndex(e => e.nome === "" && e.data === data);
-  document.querySelector(`.ed-evento[data-i="${idx}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-};
-
-// ---- arquivo ----
-function limpo() {
-  const d = JSON.parse(JSON.stringify(dados));
-  d.eventos.forEach(ev => {
-    ev.escala = (ev.escala || []).filter(l => l.ministerio || l.funcao || (l.pessoas && l.pessoas.length));
-  });
-  return d;
+// ================= CULTOS / FUNÇÕES =================
+function vagasHTML(vagas) {
+  return `<div class="vagas">${cfg().funcoes.map(f => `
+    <label><span>${esc(f)}</span><input type="number" min="0" max="20" data-vaga="${esc(f)}" value="${+(vagas[f] || 0)}"></label>`).join("")}</div>`;
 }
-$("baixar").onclick = () => {
-  const blob = new Blob([JSON.stringify(limpo(), null, 2)], { type: "application/json" });
+function renderCultos() {
+  $("funcoes").innerHTML = cfg().funcoes.map(f => `<span class="chip on">${esc(f)} <button class="mini" data-rmfuncao="${esc(f)}" title="Remover">✕</button></span>`).join("");
+  $("cultos").innerHTML = cfg().cultos.map((c, i) => `
+    <div class="cartao" data-i="${i}">
+      <div class="campos3">
+        <div><label class="l">Dia</label><select data-campo="dia">${DIAS.map((d, k) => `<option value="${k}" ${+c.dia === k ? "selected" : ""}>${d}</option>`).join("")}</select></div>
+        <div><label class="l">Horário</label><input type="time" data-campo="horario" value="${esc(c.horario)}"></div>
+        <div><label class="l">Nome</label><input type="text" data-campo="nome" value="${esc(c.nome)}"></div>
+      </div>
+      <label class="l" style="margin-top:10px">Pessoas por função</label>
+      ${vagasHTML(c.vagas)}
+      <div class="acoes"><button class="danger" data-acao="rm">Remover culto</button></div>
+    </div>`).join("");
+}
+$("cultos").addEventListener("input", e => {
+  const card = e.target.closest(".cartao"); if (!card) return;
+  const c = cfg().cultos[+card.dataset.i];
+  if (e.target.dataset.campo) c[e.target.dataset.campo] = e.target.dataset.campo === "dia" ? +e.target.value : e.target.value;
+  if (e.target.dataset.vaga) c.vagas[e.target.dataset.vaga] = Math.max(0, +e.target.value || 0);
+  salvar();
+});
+$("cultos").addEventListener("change", e => { if (e.target.dataset.campo === "dia") salvar(); });
+$("cultos").addEventListener("click", e => {
+  const b = e.target.closest("button[data-acao=rm]"); if (!b) return;
+  const i = +b.closest(".cartao").dataset.i; const c = cfg().cultos[i];
+  if (!confirm(`Remover “${c.nome}”?`)) return;
+  cfg().cultos.splice(i, 1);
+  cfg().equipe.forEach(p => p.fixos = p.fixos.filter(x => x !== c.id));
+  salvar(); renderCultos();
+});
+$("add-culto").onclick = () => { cfg().cultos.push({ id: uid("c"), nome: "Novo culto", dia: 0, horario: "19:00", vagas: { "Câmera": 1, "Moderação": 1 } }); salvar(); renderCultos(); };
+$("add-funcao").onclick = () => {
+  const f = $("nova-funcao").value.trim(); if (!f || cfg().funcoes.includes(f)) return;
+  cfg().funcoes.push(f); $("nova-funcao").value = ""; salvar(); renderCultos();
+};
+$("funcoes").addEventListener("click", e => {
+  const f = e.target.dataset.rmfuncao; if (!f) return;
+  if (!confirm(`Remover a função “${f}”?`)) return;
+  cfg().funcoes = cfg().funcoes.filter(x => x !== f);
+  cfg().equipe.forEach(p => p.funcoes = p.funcoes.filter(x => x !== f));
+  salvar(); renderCultos();
+});
+
+// ================= PERÍODO / INSTÂNCIAS =================
+function periodo() {
+  if (P.modo === "mes") { const [y, m] = P.mes.split("-").map(Number); return [new Date(y, m-1, 1), new Date(y, m, 0)]; }
+  const s = parse(P.inicio); return [s, addDias(s, 6)];
+}
+function instancias() {
+  const [a, b] = periodo(); const out = [];
+  for (let d = new Date(a); d <= b; d = addDias(d, 1))
+    for (const c of cfg().cultos) if (+c.dia === d.getDay())
+      out.push({ key: iso(d) + "|" + c.id, data: iso(d), nome: c.nome, horario: c.horario, vagas: c.vagas, cultoId: c.id });
+  for (const e of P.especiais) if (e.data >= iso(a) && e.data <= iso(b))
+    out.push({ key: "esp|" + e.id, data: e.data, nome: e.nome || "Evento especial", horario: e.horario, vagas: e.vagas, especial: true });
+  return out.sort((x, y) => (x.data + (x.horario || "")).localeCompare(y.data + (y.horario || "")));
+}
+function dispDe(inst) {
+  if (!P.disp[inst.key]) P.disp[inst.key] = cfg().equipe.filter(p => inst.cultoId && p.fixos.includes(inst.cultoId)).map(p => p.id);
+  return P.disp[inst.key];
+}
+const pessoa = id => cfg().equipe.find(p => p.id === id);
+
+function renderPeriodo() {
+  document.querySelectorAll("input[name=modo]").forEach(r => r.checked = r.value === P.modo);
+  $("campo-semana").hidden = P.modo !== "semana";
+  $("campo-mes").hidden = P.modo !== "mes";
+  $("inicio").value = P.inicio; $("mes").value = P.mes;
+  const [a, b] = periodo(); const n = instancias().length;
+  $("resumo-periodo").textContent = `${curta(iso(a))} até ${curta(iso(b))} · ${n} culto${n === 1 ? "" : "s"}/evento${n === 1 ? "" : "s"}`;
+}
+document.querySelectorAll("input[name=modo]").forEach(r => r.onchange = () => { P.modo = r.value; P.res = null; salvar(true); renderMontar(); });
+$("inicio").onchange = e => { if (e.target.value) { P.inicio = e.target.value; P.res = null; salvar(true); renderMontar(); } };
+$("mes").onchange = e => { if (e.target.value) { P.mes = e.target.value; P.res = null; salvar(true); renderMontar(); } };
+
+// ---------- especiais ----------
+function renderEspeciais() {
+  $("especiais").innerHTML = P.especiais.map((e, i) => `
+    <div class="cartao" data-i="${i}">
+      <div class="campos3">
+        <div><label class="l">Data</label><input type="date" data-campo="data" value="${esc(e.data)}"></div>
+        <div><label class="l">Horário</label><input type="time" data-campo="horario" value="${esc(e.horario)}"></div>
+        <div><label class="l">Nome</label><input type="text" data-campo="nome" value="${esc(e.nome)}" placeholder="Ex.: Conferência de Mulheres"></div>
+      </div>
+      <label class="l" style="margin-top:10px">Pessoas por função</label>
+      ${vagasHTML(e.vagas)}
+      <div class="acoes"><button class="danger" data-acao="rm">Remover</button></div>
+    </div>`).join("");
+}
+$("add-especial").onclick = () => {
+  const [a] = periodo();
+  P.especiais.push({ id: uid("e"), data: iso(a), horario: "19:00", nome: "", vagas: { "Câmera": 2, "Moderação": 1, "Câmera móvel": 1 } });
+  salvar(true); renderMontar();
+};
+$("especiais").addEventListener("input", e => {
+  const card = e.target.closest(".cartao"); if (!card) return;
+  const ev = P.especiais[+card.dataset.i];
+  if (e.target.dataset.campo) ev[e.target.dataset.campo] = e.target.value;
+  if (e.target.dataset.vaga) ev.vagas[e.target.dataset.vaga] = Math.max(0, +e.target.value || 0);
+  salvar(true);
+});
+$("especiais").addEventListener("change", e => { if (e.target.dataset.campo === "data" || e.target.dataset.campo === "horario") { P.res = null; renderDisp(); renderPeriodo(); } });
+$("especiais").addEventListener("click", e => {
+  const b = e.target.closest("button[data-acao=rm]"); if (!b) return;
+  const i = +b.closest(".cartao").dataset.i; delete P.disp["esp|" + P.especiais[i].id];
+  P.especiais.splice(i, 1); P.res = null; salvar(true); renderMontar();
+});
+
+// ---------- disponibilidade ----------
+function renderDisp() {
+  const ins = instancias();
+  if (!cfg().equipe.length) { $("disp").innerHTML = `<p class="vazio">Cadastre a equipe na aba 2.</p>`; return; }
+  if (!ins.length) { $("disp").innerHTML = `<p class="vazio">Nenhum culto nesse período. Confira a aba 3.</p>`; return; }
+  $("disp").innerHTML = ins.map(inst => {
+    const d = dispDe(inst);
+    const preciso = Object.values(inst.vagas).reduce((s, v) => s + (+v || 0), 0);
+    return `<div class="cartao disp" data-key="${esc(inst.key)}">
+      <div class="disp-topo"><strong>${curta(inst.data)} · ${esc(inst.horario || "")}</strong> <span>${esc(inst.nome)}${inst.especial ? " ⭐" : ""}</span>
+        <span class="conta ${d.length < preciso ? "falta" : ""}">${d.length}/${preciso}</span></div>
+      <div class="chips">${cfg().equipe.map(p => `<button class="chip ${d.includes(p.id) ? "on" : ""}" data-p="${p.id}">${inst.cultoId && p.fixos.includes(inst.cultoId) ? "📌 " : ""}${esc(p.nome || "(sem nome)")}</button>`).join("")}
+        <button class="chip ghost-chip" data-todos="1">todos</button></div>
+    </div>`;
+  }).join("");
+}
+$("disp").addEventListener("click", e => {
+  const card = e.target.closest(".disp"); if (!card) return;
+  const b = e.target.closest("button"); if (!b) return;
+  const key = card.dataset.key; const lista = P.disp[key];
+  if (b.dataset.todos) P.disp[key] = lista.length === cfg().equipe.length ? [] : cfg().equipe.map(p => p.id);
+  else if (b.dataset.p) toggle(lista, b.dataset.p);
+  salvar(true); renderDisp();
+});
+
+// ================= GERADOR =================
+function historico(antesDe) {
+  const lim = iso(addDias(parse(antesDe), -60)); const cont = {};
+  for (const ev of D.eventos) if (ev.data < antesDe && ev.data >= lim)
+    for (const l of ev.escala || []) for (const n of l.pessoas || []) cont[n] = (cont[n] || 0) + 1;
+  return cont;
+}
+function gerar() {
+  const ins = instancias(); const [a] = periodo();
+  const hist = historico(iso(a));
+  const noPeriodo = {}; const porDia = {}; const res = {};
+  const sabe = (p, f) => p.funcoes.includes(f);
+  for (const inst of ins) {
+    const disp = dispDe(inst).map(pessoa).filter(Boolean);
+    const vagas = [];
+    for (const f of cfg().funcoes) for (let k = 0; k < (+inst.vagas[f] || 0); k++) vagas.push(f);
+    // funções com menos gente capaz primeiro
+    vagas.sort((x, y) => disp.filter(p => sabe(p, x)).length - disp.filter(p => sabe(p, y)).length);
+    const usados = new Set(); const linhas = [];
+    for (const f of vagas) {
+      const cand = disp.filter(p => !usados.has(p.id) && sabe(p, f));
+      cand.forEach(p => p._s =
+        (inst.cultoId && p.fixos.includes(inst.cultoId) ? -1000 : 0) +
+        (noPeriodo[p.id] || 0) * 10 +
+        (porDia[inst.data + p.id] ? 6 : 0) +
+        (hist[p.nome] || 0) +
+        Math.random());
+      cand.sort((x, y) => x._s - y._s);
+      const ok = cand[0];
+      if (ok) { usados.add(ok.id); noPeriodo[ok.id] = (noPeriodo[ok.id] || 0) + 1; porDia[inst.data + ok.id] = 1; }
+      linhas.push({ funcao: f, pessoa: ok ? ok.id : "" });
+    }
+    linhas.sort((x, y) => cfg().funcoes.indexOf(x.funcao) - cfg().funcoes.indexOf(y.funcao));
+    res[inst.key] = linhas;
+  }
+  P.res = res; salvar(true); renderResultado();
+  $("resultado").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+$("gerar").onclick = gerar;
+
+function renderResultado() {
+  if (!P.res) { $("resultado").innerHTML = ""; return; }
+  const ins = instancias().filter(i => P.res[i.key]);
+  const cont = {}; let faltas = 0;
+  const cards = ins.map(inst => {
+    const d = dispDe(inst);
+    const usados = P.res[inst.key].map(l => l.pessoa).filter(Boolean);
+    const linhas = P.res[inst.key].map((l, j) => {
+      if (l.pessoa) cont[l.pessoa] = (cont[l.pessoa] || 0) + 1; else faltas++;
+      const dup = l.pessoa && usados.filter(x => x === l.pessoa).length > 1;
+      const opts = [`<option value="">— ninguém —</option>`].concat(cfg().equipe.map(p => {
+        const avisos = [];
+        if (!d.includes(p.id)) avisos.push("não marcou");
+        if (!p.funcoes.includes(l.funcao)) avisos.push("não faz");
+        return `<option value="${p.id}" ${p.id === l.pessoa ? "selected" : ""}>${esc(p.nome)}${avisos.length ? " (" + avisos.join(", ") + ")" : ""}</option>`;
+      })).join("");
+      return `<div class="res-linha ${!l.pessoa || dup ? "alerta" : ""}"><span class="funcao">${esc(l.funcao)}</span><select data-key="${esc(inst.key)}" data-j="${j}">${opts}</select>${!l.pessoa ? `<span class="aviso">falta gente</span>` : dup ? `<span class="aviso">repetido</span>` : ""}</div>`;
+    }).join("");
+    return `<div class="cartao"><div class="disp-topo"><strong>${curta(inst.data)} · ${esc(inst.horario || "")}</strong> <span>${esc(inst.nome)}${inst.especial ? " ⭐" : ""}</span></div>${linhas || `<p class="dica">Nenhuma vaga configurada.</p>`}</div>`;
+  }).join("");
+  const resumo = cfg().equipe.map(p => `<span class="pill">${esc(p.nome)} <b>${cont[p.id] || 0}</b></span>`).join("");
+  $("resultado").innerHTML = `
+    <div class="bloco destaque">
+      <h2>Escala gerada</h2>
+      <p class="dica">Revise e troque quem quiser. ${faltas ? `<b class="txt-alerta">${faltas} vaga${faltas > 1 ? "s" : ""} sem ninguém</b> — marque mais gente disponível ou troque manualmente.` : "Todas as vagas preenchidas ✓"}</p>
+      <div class="resumo">${resumo}</div>
+      ${cards}
+      <div class="acoes-grandes">
+        <button id="regerar">🔀 Gerar de novo</button>
+        <button id="whats">📋 Copiar para o WhatsApp</button>
+        <button class="primary" id="publicar">🚀 Publicar no site</button>
+      </div>
+      <textarea id="whats-txt" rows="10" hidden readonly></textarea>
+    </div>`;
+  $("regerar").onclick = gerar;
+  $("whats").onclick = copiarWhats;
+  $("publicar").onclick = publicar;
+}
+$("resultado").addEventListener("change", e => {
+  const s = e.target.closest("select[data-key]"); if (!s) return;
+  P.res[s.dataset.key][+s.dataset.j].pessoa = s.value; salvar(true); renderResultado();
+});
+
+function eventosGerados() {
+  return instancias().filter(i => P.res && P.res[i.key]).map(inst => {
+    const grupos = {};
+    for (const l of P.res[inst.key]) if (l.pessoa) (grupos[l.funcao] = grupos[l.funcao] || []).push(pessoa(l.pessoa)?.nome || "");
+    return { data: inst.data, horario: inst.horario || "", nome: inst.nome, obs: "",
+      escala: Object.entries(grupos).map(([funcao, pessoas]) => ({ ministerio: MIN, funcao, pessoas })) };
+  });
+}
+function textoWhats() {
+  const [a, b] = periodo();
+  let t = `*Escala da Transmissão* 🎥\n_${curta(iso(a))} a ${curta(iso(b))}_\n`;
+  for (const ev of eventosGerados()) {
+    t += `\n*${curta(ev.data)} · ${ev.horario}* — ${ev.nome}\n`;
+    for (const l of ev.escala) t += `• ${l.funcao}: ${l.pessoas.join(", ")}\n`;
+  }
+  t += `\nVeja sua escala: ${location.href.replace(/montar\.html.*$/, "")}`;
+  return t;
+}
+async function copiarWhats() {
+  const t = textoWhats();
+  try { await navigator.clipboard.writeText(t); status("Texto copiado! Cole no grupo."); }
+  catch { const ta = $("whats-txt"); ta.hidden = false; ta.value = t; ta.select(); status("Selecione e copie o texto abaixo"); }
+}
+
+// ================= PUBLICAR / ARQUIVO =================
+function baixar() {
+  const d = JSON.parse(JSON.stringify(D));
+  d.eventos.sort((x, y) => (x.data + x.horario).localeCompare(y.data + y.horario));
+  const blob = new Blob([JSON.stringify(d, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = "escalas.json";
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  status("Arquivo baixado — agora envie para o GitHub");
-};
-$("arquivo").onchange = async e => {
-  const f = e.target.files[0]; if (!f) return;
-  try { dados = JSON.parse(await f.text()); dados.eventos = dados.eventos || []; ordenar(); salvarLocal(); render(); status("Arquivo aberto"); }
-  catch { alert("Esse arquivo não parece ser um escalas.json válido."); }
-  e.target.value = "";
-};
-async function carregarDoSite() {
-  const r = await fetch("escalas.json?v=" + Date.now(), { cache: "no-store" });
-  dados = await r.json(); dados.eventos = dados.eventos || []; ordenar();
 }
-$("recarregar").onclick = async () => {
-  if (!confirm("Isso apaga o rascunho deste navegador e carrega o que está publicado. Continuar?")) return;
-  try { await carregarDoSite(); salvarLocal(); render(); status("Carregado do site"); }
-  catch { alert("Não consegui carregar do site."); }
-};
+function publicar() {
+  const [a, b] = periodo(); const ia = iso(a), ib = iso(b);
+  const novos = eventosGerados();
+  const existentes = D.eventos.filter(e => e.data >= ia && e.data <= ib).length;
+  if (existentes && !confirm(`Já existem ${existentes} escala(s) publicada(s) nesse período. Substituir pela nova?`)) return;
+  D.eventos = D.eventos.filter(e => !(e.data >= ia && e.data <= ib)).concat(novos);
+  salvar(true); baixar();
+  status("Arquivo baixado — agora envie ao GitHub");
+  alert("Arquivo escalas.json baixado!\n\nAgora no GitHub: Add file → Upload files → arraste o escalas.json → Commit changes.");
+}
+$("baixar").onclick = baixar;
 
-// ---- início ----
+function renderPublicadas() {
+  const evs = [...D.eventos].sort((x, y) => (x.data + x.horario).localeCompare(y.data + y.horario));
+  $("publicadas").innerHTML = evs.length ? evs.map(ev => `
+    <div class="cartao"><div class="disp-topo"><strong>${curta(ev.data)} · ${esc(ev.horario)}</strong> <span>${esc(ev.nome)}</span>
+      <button class="ghost danger" data-rm="${esc(ev.data + "|" + ev.horario + "|" + ev.nome)}" title="Apagar">✕</button></div>
+      ${(ev.escala || []).map(l => `<div class="res-linha"><span class="funcao">${esc(l.funcao)}</span><span>${esc(l.pessoas.join(", "))}</span></div>`).join("")}
+    </div>`).join("") : `<p class="vazio">Nada publicado ainda.</p>`;
+}
+$("publicadas").addEventListener("click", e => {
+  const k = e.target.dataset.rm; if (!k) return;
+  if (!confirm("Apagar essa escala do arquivo?")) return;
+  D.eventos = D.eventos.filter(ev => ev.data + "|" + ev.horario + "|" + ev.nome !== k);
+  salvar(); renderPublicadas();
+});
+
+// ================= INÍCIO =================
+function renderMontar() { renderPeriodo(); renderEspeciais(); renderDisp(); renderResultado(); }
+function renderTudo() { renderMontar(); renderEquipe(); renderCultos(); renderPublicadas(); }
+
 (async () => {
-  let rascunho = null;
-  try { rascunho = JSON.parse(localStorage.getItem(CHAVE)); } catch {}
-  if (rascunho && rascunho.eventos) { dados = rascunho; status("Rascunho recuperado deste navegador"); }
-  else {
-    try { await carregarDoSite(); status("Carregado do site"); }
-    catch { status("Começando do zero"); }
+  let site = null;
+  try { const r = await fetch("escalas.json?v=" + Date.now(), { cache: "no-store" }); site = await r.json(); } catch {}
+  try { D = JSON.parse(localStorage.getItem(KD)); } catch {}
+  try { P = JSON.parse(localStorage.getItem(KP)); } catch {}
+  if (!D || !D.config) D = site && site.config ? site : Object.assign(padrao(), site ? { eventos: site.eventos || [] } : {});
+  // traz escalas publicadas que o rascunho ainda não tem
+  if (site && site.eventos) {
+    const chave = e => e.data + "|" + e.horario + "|" + e.nome;
+    const tem = new Set(D.eventos.map(chave));
+    site.eventos.forEach(e => { if (!tem.has(chave(e))) D.eventos.push(e); });
   }
-  ordenar(); render();
+  D.eventos = D.eventos || [];
+  if (!P) P = planoPadrao();
+  renderTudo();
 })();
 </script>
 </body>
