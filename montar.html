@@ -55,7 +55,7 @@
 
   <!-- ================= EQUIPE ================= -->
   <section id="aba-equipe" class="aba" hidden>
-    <p class="dica">Marque o que cada pessoa sabe fazer. Quando alguém for treinado em outra função, é só marcar aqui. “Dias fixos” = a pessoa já vem marcada como disponível e tem prioridade nesse culto.</p>
+    <p class="dica">Marque o que cada pessoa sabe fazer. Quando alguém for treinado em outra função, é só marcar aqui. “Dias fixos” = a pessoa já vem marcada como disponível e entra primeiro nesse culto. Toque no culto para alternar entre <b>sempre</b>, <b>semana sim, semana não</b> (duas opções de semana) e desligado.</p>
     <div id="equipe"></div>
     <button id="add-pessoa">+ Pessoa</button>
   </section>
@@ -168,8 +168,25 @@ function renderEquipe() {
       <label class="l" style="margin-top:10px">Sabe fazer</label>
       <div class="chips">${cfg().funcoes.map(f => `<button class="chip ${p.funcoes.includes(f) ? "on" : ""}" data-funcao="${esc(f)}">${esc(f)}</button>`).join("")}</div>
       <label class="l" style="margin-top:10px">Dias fixos</label>
-      <div class="chips">${cfg().cultos.map(c => `<button class="chip ${p.fixos.includes(c.id) ? "on" : ""}" data-fixo="${c.id}">📌 ${esc(c.nome)} · ${esc(rotuloRec(c))} ${esc(c.horario)}</button>`).join("") || `<span class="dica">Cadastre os cultos primeiro.</span>`}</div>
+      <div class="chips">${cfg().cultos.map(c => {
+        const f = fixosDe(p).find(x => x.id === c.id);
+        const extra = !f ? "" : f.modo === "sempre" ? " · sempre" : ` · semana sim, semana não (${proximas(c, f.modo)})`;
+        return `<button class="chip ${f ? "on" : ""}" data-fixo="${c.id}" title="Toque para alternar: sempre → semana sim/não → outra semana → desligado">📌 ${esc(c.nome)}${esc(extra)}</button>`;
+      }).join("") || `<span class="dica">Cadastre os cultos primeiro.</span>`}</div>
     </div>`).join("");
+}
+function proximas(c, modo) {
+  const out = []; let d = new Date();
+  for (let k = 0; k < 120 && out.length < 2; k++, d = addDias(d, 1))
+    if (ocorre(c, d) && semanaAB(iso(d)) === modo) out.push(`${pad(d.getDate())}/${pad(d.getMonth()+1)}`);
+  return out.join(", ") + "…";
+}
+function cicloFixo(p, id) {
+  p.fixos = fixosDe(p);
+  const i = p.fixos.findIndex(f => f.id === id);
+  if (i < 0) return p.fixos.push({ id, modo: "sempre" });
+  const prox = { sempre: "A", A: "B", B: null }[p.fixos[i].modo];
+  if (prox) p.fixos[i].modo = prox; else p.fixos.splice(i, 1);
 }
 $("equipe").addEventListener("input", e => {
   const c = e.target.closest(".cartao"); if (!c) return;
@@ -181,7 +198,7 @@ $("equipe").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   if (b.dataset.acao === "rm") { if (!confirm(`Remover ${p.nome}?`)) return; cfg().equipe.splice(+c.dataset.i, 1); }
   if (b.dataset.funcao) toggle(p.funcoes, b.dataset.funcao);
-  if (b.dataset.fixo) toggle(p.fixos, b.dataset.fixo);
+  if (b.dataset.fixo) { cicloFixo(p, b.dataset.fixo); if (P) { P.disp = {}; P.res = null; } }
   salvar(); renderEquipe();
 });
 $("add-pessoa").onclick = () => { cfg().equipe.push({ id: uid("p"), nome: "", funcoes: [], fixos: [] }); salvar(); renderEquipe(); };
@@ -253,7 +270,7 @@ $("cultos").addEventListener("click", e => {
   const i = +b.closest(".cartao").dataset.i; const c = cfg().cultos[i];
   if (!confirm(`Remover “${c.nome}”?`)) return;
   cfg().cultos.splice(i, 1);
-  cfg().equipe.forEach(p => p.fixos = p.fixos.filter(x => x !== c.id));
+  cfg().equipe.forEach(p => p.fixos = fixosDe(p).filter(x => x.id !== c.id));
   salvar(); renderCultos();
 });
 $("add-culto").onclick = () => { cfg().cultos.push({ id: uid("c"), nome: "Novo culto", dia: 0, horario: "19:00", vagas: { "Câmera": 1, "Moderação": 1 } }); salvar(); renderCultos(); };
@@ -281,7 +298,7 @@ function instancias() {
     const substituidos = new Set(doDia.map(c => c.substitui).filter(Boolean));
     for (const c of doDia) if (!substituidos.has(c.id))
       out.push({ key: iso(d) + "|" + c.id, data: iso(d), nome: c.nome, horario: c.horario, vagas: c.vagas, cultoId: c.id,
-        fixoIds: [c.id, c.substitui].filter(Boolean), especial: (c.freq || "semanal") !== "semanal" });
+        especial: (c.freq || "semanal") !== "semanal" });
   }
   for (const e of P.especiais) if (e.data >= iso(a) && e.data <= iso(b))
     out.push({ key: "esp|" + e.id, data: e.data, nome: e.nome || "Evento especial", horario: e.horario, vagas: e.vagas, especial: true });
@@ -291,7 +308,11 @@ function dispDe(inst) {
   if (!P.disp[inst.key]) P.disp[inst.key] = cfg().equipe.filter(p => ehFixo(p, inst)).map(p => p.id);
   return P.disp[inst.key];
 }
-const ehFixo = (p, inst) => (inst.fixoIds || []).some(id => p.fixos.includes(id));
+// semanas A/B: contadas a partir da segunda 19/10/2026
+const BASE_AB = new Date(2026, 9, 19);
+const semanaAB = s => (Math.floor(Math.round((parse(s) - BASE_AB) / 864e5) / 7) % 2 + 2) % 2 === 0 ? "A" : "B";
+const fixosDe = p => (p.fixos || []).map(f => typeof f === "string" ? { id: f, modo: "sempre" } : f);
+const ehFixo = (p, inst) => !!inst.cultoId && fixosDe(p).some(f => f.id === inst.cultoId && (f.modo === "sempre" || f.modo === semanaAB(inst.data)));
 const pessoa = id => cfg().equipe.find(p => p.id === id);
 
 function renderPeriodo() {
@@ -383,6 +404,15 @@ function gerar() {
     // funções com menos gente capaz primeiro
     vagas.sort((x, y) => disp.filter(p => sabe(p, x)).length - disp.filter(p => sabe(p, y)).length);
     const usados = new Set(); const linhas = [];
+    const marca = (p, f) => { usados.add(p.id); noPeriodo[p.id] = (noPeriodo[p.id] || 0) + 1; porDia[inst.data + p.id] = 1; linhas.push({ funcao: f, pessoa: p.id }); };
+    // 1º: quem é fixo nesse culto entra primeiro (quem faz menos funções escolhe antes)
+    const fixos = disp.filter(p => ehFixo(p, inst)).sort((x, y) => x.funcoes.length - y.funcoes.length);
+    for (const p of fixos) {
+      const opcoes = vagas.filter(f => sabe(p, f));
+      if (!opcoes.length) continue;
+      opcoes.sort((x, y) => disp.filter(q => !usados.has(q.id) && sabe(q, x)).length - disp.filter(q => !usados.has(q.id) && sabe(q, y)).length);
+      const f = opcoes[0]; vagas.splice(vagas.indexOf(f), 1); marca(p, f);
+    }
     for (const f of vagas) {
       const cand = disp.filter(p => !usados.has(p.id) && sabe(p, f));
       cand.forEach(p => p._s =
@@ -393,8 +423,7 @@ function gerar() {
         Math.random());
       cand.sort((x, y) => x._s - y._s);
       const ok = cand[0];
-      if (ok) { usados.add(ok.id); noPeriodo[ok.id] = (noPeriodo[ok.id] || 0) + 1; porDia[inst.data + ok.id] = 1; }
-      linhas.push({ funcao: f, pessoa: ok ? ok.id : "" });
+      if (ok) marca(ok, f); else linhas.push({ funcao: f, pessoa: "" });
     }
     linhas.sort((x, y) => cfg().funcoes.indexOf(x.funcao) - cfg().funcoes.indexOf(y.funcao));
     res[inst.key] = linhas;
