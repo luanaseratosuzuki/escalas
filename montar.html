@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Montar escalas</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Montar escalas</h1>
+    <p>Monte aqui, depois salve o arquivo e envie para o GitHub.</p>
+  </header>
+
+  <div class="ajuda">
+    <strong>Como publicar as mudanças</strong>
+    <ol>
+      <li>Monte ou edite as escalas abaixo (tudo fica salvo neste navegador automaticamente).</li>
+      <li>Clique em <b>Baixar escalas.json</b>.</li>
+      <li>No GitHub, abra o repositório → <b>Add file → Upload files</b> → arraste o <code>escalas.json</code> → <b>Commit changes</b>.</li>
+      <li>Em 1–2 minutos o site já mostra a escala nova.</li>
+    </ol>
+  </div>
+
+  <div class="barra">
+    <button class="primary" id="baixar">⬇ Baixar escalas.json</button>
+    <button id="novo">+ Novo culto/evento</button>
+    <button id="recarregar" title="Descarta o rascunho e carrega o que está publicado no site">↻ Carregar do site</button>
+    <label class="btn" title="Abrir um escalas.json do computador">📂 Abrir arquivo<input type="file" id="arquivo" accept=".json,application/json" hidden></label>
+    <span class="status" id="status"></span>
+  </div>
+
+  <div class="campos2" style="margin-top:16px">
+    <div><label class="l" for="titulo">Título do site</label><input type="text" id="titulo"></div>
+    <div><label class="l" for="subtitulo">Subtítulo</label><input type="text" id="subtitulo"></div>
+  </div>
+
+  <div id="eventos"></div>
+
+  <datalist id="dl-min"></datalist>
+  <datalist id="dl-func"></datalist>
+  <datalist id="dl-nomes"></datalist>
+</div>
+
+<script>
+const CHAVE = "escalas-rascunho-v1";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+let dados = { titulo: "Escalas", subtitulo: "", eventos: [] };
+
+function status(msg) { $("status").textContent = msg; }
+
+function salvarLocal() {
+  try { localStorage.setItem(CHAVE, JSON.stringify(dados)); status("Rascunho salvo neste navegador"); }
+  catch (e) { status("Não foi possível salvar o rascunho — baixe o arquivo antes de sair"); }
+}
+
+function atualizarSugestoes() {
+  const mins = new Set(), funcs = new Set(), nomes = new Set();
+  for (const ev of dados.eventos) for (const l of ev.escala || []) {
+    if (l.ministerio) mins.add(l.ministerio);
+    if (l.funcao) funcs.add(l.funcao);
+    (l.pessoas || []).forEach(p => p && nomes.add(p));
+  }
+  const op = s => [...s].sort((a,b)=>a.localeCompare(b,"pt-BR")).map(v => `<option value="${esc(v)}">`).join("");
+  $("dl-min").innerHTML = op(mins);
+  $("dl-func").innerHTML = op(funcs);
+  $("dl-nomes").innerHTML = op(nomes);
+}
+
+function ordenar() {
+  dados.eventos.sort((a, b) => ((a.data||"") + (a.horario||"")).localeCompare((b.data||"") + (b.horario||"")));
+}
+
+function render() {
+  $("titulo").value = dados.titulo || "";
+  $("subtitulo").value = dados.subtitulo || "";
+  atualizarSugestoes();
+
+  if (!dados.eventos.length) {
+    $("eventos").innerHTML = `<p class="vazio">Nenhum evento ainda. Clique em “+ Novo culto/evento”.</p>`;
+    return;
+  }
+
+  $("eventos").innerHTML = dados.eventos.map((ev, i) => `
+    <div class="ed-evento" data-i="${i}">
+      <div class="campos3">
+        <div><label class="l">Data</label><input type="date" data-k="data" value="${esc(ev.data)}"></div>
+        <div><label class="l">Horário</label><input type="time" data-k="horario" value="${esc(ev.horario)}"></div>
+        <div><label class="l">Nome do culto/evento</label><input type="text" data-k="nome" value="${esc(ev.nome)}" placeholder="Ex.: Culto de Domingo — Noite"></div>
+      </div>
+      <div style="margin-top:10px"><label class="l">Observação (opcional)</label><input type="text" data-k="obs" value="${esc(ev.obs)}" placeholder="Ex.: Chegar 1h antes"></div>
+
+      <div class="ed-cab"><span>Ministério</span><span>Função</span><span>Pessoas (separe por vírgula)</span><span></span></div>
+      ${(ev.escala || []).map((l, j) => `
+        <div class="ed-linha" data-j="${j}">
+          <input type="text" data-c="ministerio" list="dl-min" value="${esc(l.ministerio)}" placeholder="Ministério">
+          <input type="text" data-c="funcao" list="dl-func" value="${esc(l.funcao)}" placeholder="Função">
+          <input type="text" class="pessoas" data-c="pessoas" value="${esc((l.pessoas||[]).join(", "))}" placeholder="Pessoas (separe por vírgula)">
+          <button class="ghost danger" data-acao="rmLinha" title="Remover linha">✕</button>
+        </div>`).join("")}
+
+      <div class="acoes">
+        <button data-acao="addLinha">+ Linha</button>
+        <button data-acao="duplicar" title="Cria uma cópia deste evento uma semana depois">Duplicar (+7 dias)</button>
+        <button class="danger" data-acao="rmEvento">Excluir evento</button>
+      </div>
+    </div>`).join("");
+}
+
+// ---- edição ----
+$("eventos").addEventListener("input", e => {
+  const card = e.target.closest(".ed-evento"); if (!card) return;
+  const ev = dados.eventos[+card.dataset.i];
+  if (e.target.dataset.k) ev[e.target.dataset.k] = e.target.value;
+  const linha = e.target.closest(".ed-linha");
+  if (linha && e.target.dataset.c) {
+    const l = ev.escala[+linha.dataset.j];
+    const c = e.target.dataset.c;
+    l[c] = c === "pessoas" ? e.target.value.split(",").map(s => s.trim()).filter(Boolean) : e.target.value;
+  }
+  salvarLocal();
+});
+$("eventos").addEventListener("change", e => {
+  if (e.target.dataset.k === "data" || e.target.dataset.k === "horario") { ordenar(); render(); }
+  else atualizarSugestoes();
+});
+$("eventos").addEventListener("click", e => {
+  const b = e.target.closest("button[data-acao]"); if (!b) return;
+  const card = b.closest(".ed-evento"); const i = +card.dataset.i; const ev = dados.eventos[i];
+  const acao = b.dataset.acao;
+  if (acao === "addLinha") {
+    const ult = ev.escala[ev.escala.length - 1];
+    ev.escala.push({ ministerio: ult ? ult.ministerio : "", funcao: "", pessoas: [] });
+  }
+  if (acao === "rmLinha") ev.escala.splice(+b.closest(".ed-linha").dataset.j, 1);
+  if (acao === "rmEvento") {
+    if (!confirm(`Excluir “${ev.nome || "evento"}”?`)) return;
+    dados.eventos.splice(i, 1);
+  }
+  if (acao === "duplicar") {
+    const copia = JSON.parse(JSON.stringify(ev));
+    if (copia.data) {
+      const [y, m, d] = copia.data.split("-").map(Number);
+      const nd = new Date(y, m - 1, d + 7);
+      copia.data = `${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,"0")}-${String(nd.getDate()).padStart(2,"0")}`;
+    }
+    dados.eventos.push(copia); ordenar();
+  }
+  salvarLocal(); render();
+});
+$("titulo").addEventListener("input", e => { dados.titulo = e.target.value; salvarLocal(); });
+$("subtitulo").addEventListener("input", e => { dados.subtitulo = e.target.value; salvarLocal(); });
+
+$("novo").onclick = () => {
+  const h = new Date();
+  const data = `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,"0")}-${String(h.getDate()).padStart(2,"0")}`;
+  dados.eventos.push({ data, horario: "", nome: "", obs: "", escala: [{ ministerio: "", funcao: "", pessoas: [] }] });
+  ordenar(); salvarLocal(); render();
+  const idx = dados.eventos.findIndex(e => e.nome === "" && e.data === data);
+  document.querySelector(`.ed-evento[data-i="${idx}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+};
+
+// ---- arquivo ----
+function limpo() {
+  const d = JSON.parse(JSON.stringify(dados));
+  d.eventos.forEach(ev => {
+    ev.escala = (ev.escala || []).filter(l => l.ministerio || l.funcao || (l.pessoas && l.pessoas.length));
+  });
+  return d;
+}
+$("baixar").onclick = () => {
+  const blob = new Blob([JSON.stringify(limpo(), null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "escalas.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  status("Arquivo baixado — agora envie para o GitHub");
+};
+$("arquivo").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { dados = JSON.parse(await f.text()); dados.eventos = dados.eventos || []; ordenar(); salvarLocal(); render(); status("Arquivo aberto"); }
+  catch { alert("Esse arquivo não parece ser um escalas.json válido."); }
+  e.target.value = "";
+};
+async function carregarDoSite() {
+  const r = await fetch("escalas.json?v=" + Date.now(), { cache: "no-store" });
+  dados = await r.json(); dados.eventos = dados.eventos || []; ordenar();
+}
+$("recarregar").onclick = async () => {
+  if (!confirm("Isso apaga o rascunho deste navegador e carrega o que está publicado. Continuar?")) return;
+  try { await carregarDoSite(); salvarLocal(); render(); status("Carregado do site"); }
+  catch { alert("Não consegui carregar do site."); }
+};
+
+// ---- início ----
+(async () => {
+  let rascunho = null;
+  try { rascunho = JSON.parse(localStorage.getItem(CHAVE)); } catch {}
+  if (rascunho && rascunho.eventos) { dados = rascunho; status("Rascunho recuperado deste navegador"); }
+  else {
+    try { await carregarDoSite(); status("Carregado do site"); }
+    catch { status("Começando do zero"); }
+  }
+  ordenar(); render();
+})();
+</script>
+</body>
+</html>

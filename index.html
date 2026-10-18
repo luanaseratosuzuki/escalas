@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Escalas</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="titulo">Escalas</h1>
+    <p id="subtitulo"></p>
+  </header>
+
+  <div class="filtros">
+    <input type="search" id="busca" placeholder="Digite seu nome para ver suas escalas…" autocomplete="off">
+    <div class="chips" id="chips"></div>
+    <label class="toggle"><input type="checkbox" id="passadas"> Mostrar datas que já passaram</label>
+  </div>
+
+  <main id="lista"><p class="vazio">Carregando escalas…</p></main>
+
+  <p class="rodape">Atualizado pela liderança · <a href="montar.html">área de montagem</a></p>
+</div>
+
+<script>
+const DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+
+let dados = { eventos: [] };
+let filtroMin = "Todos";
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const norm = s => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+function parseData(iso) {
+  const [y, m, d] = String(iso).split("-").map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+}
+function hojeISO() {
+  const h = new Date();
+  return `${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,"0")}-${String(h.getDate()).padStart(2,"0")}`;
+}
+function rotuloDia(iso) {
+  const d = parseData(iso);
+  const base = `${DIAS[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]}`;
+  const hoje = hojeISO();
+  if (iso === hoje) return "Hoje · " + base;
+  const amanha = new Date(); amanha.setDate(amanha.getDate() + 1);
+  const amISO = `${amanha.getFullYear()}-${String(amanha.getMonth()+1).padStart(2,"0")}-${String(amanha.getDate()).padStart(2,"0")}`;
+  if (iso === amISO) return "Amanhã · " + base;
+  return base;
+}
+function destacar(texto, termo) {
+  const t = esc(texto);
+  if (!termo) return t;
+  return norm(texto).includes(termo) ? `<mark>${t}</mark>` : t;
+}
+
+function montarChips() {
+  const mins = [...new Set(dados.eventos.flatMap(e => (e.escala || []).map(l => l.ministerio).filter(Boolean)))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  const todos = ["Todos", ...mins];
+  $("chips").innerHTML = todos.map(m =>
+    `<button class="chip ${m === filtroMin ? "on" : ""}" data-m="${esc(m)}">${esc(m)}</button>`).join("");
+  $("chips").querySelectorAll(".chip").forEach(b => b.onclick = () => { filtroMin = b.dataset.m; montarChips(); render(); });
+}
+
+function render() {
+  const termo = norm($("busca").value);
+  const verPassadas = $("passadas").checked;
+  const hoje = hojeISO();
+
+  let eventos = [...dados.eventos]
+    .filter(e => verPassadas || (e.data || "") >= hoje)
+    .sort((a, b) => (a.data + (a.horario || "")).localeCompare(b.data + (b.horario || "")));
+
+  const html = [];
+  const porDia = new Map();
+
+  for (const ev of eventos) {
+    let linhas = (ev.escala || []).filter(l => filtroMin === "Todos" || l.ministerio === filtroMin);
+    if (termo) linhas = linhas.filter(l => (l.pessoas || []).some(p => norm(p).includes(termo)));
+    if (!linhas.length) continue;
+
+    const grupos = new Map();
+    for (const l of linhas) {
+      const k = l.ministerio || "Geral";
+      if (!grupos.has(k)) grupos.set(k, []);
+      grupos.get(k).push(l);
+    }
+    const blocos = [...grupos].map(([min, ls]) => `
+      <div class="min">
+        <h4>${esc(min)}</h4>
+        ${ls.map(l => `<div class="linha"><span class="funcao">${esc(l.funcao)}</span><span>${(l.pessoas||[]).map(p => destacar(p, termo)).join(", ")}</span></div>`).join("")}
+      </div>`).join("");
+
+    const card = `
+      <article class="evento">
+        <div class="evento-topo">
+          <h3>${esc(ev.nome || "Evento")}</h3>
+          ${ev.horario ? `<span class="hora">${esc(ev.horario)}</span>` : ""}
+        </div>
+        ${ev.obs ? `<p class="obs">${esc(ev.obs)}</p>` : ""}
+        ${blocos}
+      </article>`;
+    if (!porDia.has(ev.data)) porDia.set(ev.data, []);
+    porDia.get(ev.data).push(card);
+  }
+
+  for (const [dia, cards] of porDia) {
+    html.push(`<section class="dia ${dia === hoje ? "hoje" : ""}"><h2>${rotuloDia(dia)}</h2>${cards.join("")}</section>`);
+  }
+
+  $("lista").innerHTML = html.length ? html.join("")
+    : `<p class="vazio">${termo ? "Nenhuma escala encontrada para esse nome." : "Nenhuma escala por aqui ainda."}</p>`;
+}
+
+async function iniciar() {
+  try {
+    const r = await fetch("escalas.json?v=" + Date.now(), { cache: "no-store" });
+    dados = await r.json();
+  } catch (e) {
+    $("lista").innerHTML = `<p class="vazio">Não consegui carregar as escalas. Se você abriu o arquivo direto do computador, publique no GitHub Pages para funcionar.</p>`;
+    return;
+  }
+  dados.eventos = dados.eventos || [];
+  if (dados.titulo) { $("titulo").textContent = dados.titulo; document.title = dados.titulo; }
+  $("subtitulo").textContent = dados.subtitulo || "";
+
+  const q = new URLSearchParams(location.search).get("nome");
+  if (q) $("busca").value = q;
+
+  montarChips();
+  render();
+}
+
+$("busca").addEventListener("input", render);
+$("passadas").addEventListener("change", render);
+iniciar();
+</script>
+</body>
+</html>

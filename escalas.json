@@ -1,0 +1,43 @@
+{
+  "titulo": "Escalas",
+  "subtitulo": "Lagoinha Uberlândia",
+  "eventos": [
+    {
+      "data": "2026-10-25",
+      "horario": "10:00",
+      "nome": "Culto de Domingo — Manhã",
+      "obs": "Chegar 1h antes para passagem de som.",
+      "escala": [
+        { "ministerio": "Louvor", "funcao": "Ministro", "pessoas": ["Ana"] },
+        { "ministerio": "Louvor", "funcao": "Vocal", "pessoas": ["Bruno", "Carla"] },
+        { "ministerio": "Louvor", "funcao": "Bateria", "pessoas": ["Diego"] },
+        { "ministerio": "Mídia", "funcao": "Projeção", "pessoas": ["Eduarda"] },
+        { "ministerio": "Mídia", "funcao": "Fotografia", "pessoas": ["Felipe"] },
+        { "ministerio": "Recepção", "funcao": "Porta principal", "pessoas": ["Gabriela", "Henrique"] }
+      ]
+    },
+    {
+      "data": "2026-10-25",
+      "horario": "18:00",
+      "nome": "Culto de Domingo — Noite",
+      "obs": "",
+      "escala": [
+        { "ministerio": "Louvor", "funcao": "Ministro", "pessoas": ["Carla"] },
+        { "ministerio": "Louvor", "funcao": "Vocal", "pessoas": ["Ana", "Isabela"] },
+        { "ministerio": "Mídia", "funcao": "Projeção", "pessoas": ["João"] },
+        { "ministerio": "Kids", "funcao": "Sala 1", "pessoas": ["Larissa", "Marcos"] }
+      ]
+    },
+    {
+      "data": "2026-10-29",
+      "horario": "19:30",
+      "nome": "Culto de Quinta",
+      "obs": "",
+      "escala": [
+        { "ministerio": "Louvor", "funcao": "Ministro", "pessoas": ["Bruno"] },
+        { "ministerio": "Mídia", "funcao": "Projeção", "pessoas": ["Eduarda"] },
+        { "ministerio": "Recepção", "funcao": "Porta principal", "pessoas": ["Natália"] }
+      ]
+    }
+  ]
+}
