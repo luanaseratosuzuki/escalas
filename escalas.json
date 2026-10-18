@@ -122,11 +122,11 @@
         "id": "c5",
         "nome": "Culto + Batismo",
         "dia": 0,
-        "horario": "18:00",
+        "horario": "10:00",
         "freq": "bimestral",
         "semana": 2,
         "inicio": "2026-12",
-        "substitui": "c3",
+        "substitui": "c2",
         "vagas": {
           "Câmera": 2,
           "Moderação": 1,
